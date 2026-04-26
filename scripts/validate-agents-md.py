@@ -191,7 +191,13 @@ Return ONLY a JSON object:
   "summary": "one-line summary"
 }}
 
-Score < 70 = fail. Be strict. Do NOT include text outside JSON."""
+Scoring guidelines:
+- 90-100: Excellent caveman style. Minor issues only.
+- 70-89: Good caveman style. A few fixable issues.
+- 50-69: Needs work. Several violations.
+- 0-49: Poor. Many violations.
+
+Score < 70 = fail. Be FAIR, not pedantic. Small imperfections are OK if the overall style is clear and concise. Do NOT nitpick single words or split obvious pairs. Do NOT include text outside JSON."""
 
     user = f"=== AGENTS.md ===\n{agents_md}"
 
