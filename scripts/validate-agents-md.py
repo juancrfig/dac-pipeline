@@ -39,6 +39,57 @@ from urllib.request import Request, urlopen
 DEFAULT_MODEL = "openai/gpt-5-nano"
 CACHE_DIR = Path(__file__).resolve().parent.parent / ".agents-validation-cache"
 
+# Caveman intensity: lite | full | ultra
+# Matches the caveman repo levels: https://github.com/JuliusBrussee/caveman
+CAVEMAN_INTENSITY = os.environ.get("CAVEMAN_INTENSITY", "full").lower()
+
+INTENSITY_CONFIG = {
+    "lite": {
+        "threshold": 65,
+        "prompt_addendum": (
+            "\n\nValidation mode: LITE\n"
+            "Only enforce lite caveman rules:\n"
+            "- Drop filler words (just, really, basically, essentially)\n"
+            "- No hedging (might, should, consider, perhaps)\n"
+            "- No passive voice\n"
+            "- No prose paragraphs — use bullet lists\n"
+            "Grammar, articles, and normal sentence structure are ALLOWED.\n"
+            "Comma-separated lists and compound items count as ONE idea.\n"
+            "Do NOT flag: articles, short compound bullets, file paths, version numbers."
+        ),
+    },
+    "full": {
+        "threshold": 65,
+        "prompt_addendum": (
+            "\n\nValidation mode: FULL\n"
+            "Enforce full caveman rules:\n"
+            "- Drop articles (a, an, the)\n"
+            "- Drop filler words\n"
+            "- No hedging, no passive voice\n"
+            "- Fragments and short sentences OK\n"
+            "- One idea per sentence\n"
+            "Be FAIR, not pedantic. Small imperfections OK.\n"
+            "Comma-separated lists of related items count as ONE idea."
+        ),
+    },
+    "ultra": {
+        "threshold": 75,
+        "prompt_addendum": (
+            "\n\nValidation mode: ULTRA\n"
+            "Enforce maximum compression. Be STRICT:\n"
+            "- Telegraphic style. Abbreviate everything possible.\n"
+            "- One idea per sentence, max 10 words.\n"
+            "- No articles, no filler, no hedging, no passive voice.\n"
+            "- Prefer fragments over full sentences.\n"
+            "Only pass content that is aggressively compressed."
+        ),
+    },
+}
+
+_cave_config = INTENSITY_CONFIG.get(CAVEMAN_INTENSITY, INTENSITY_CONFIG["full"])
+CAVEMAN_THRESHOLD = int(os.environ.get("CAVEMAN_SCORE_THRESHOLD", _cave_config["threshold"]))
+CAVEMAN_PROMPT_ADDENDUM = _cave_config["prompt_addendum"]
+
 # Caveman rules from ADR-002
 CAVEMAN_RULES = [
     "Use short sentences. Max 15 words per sentence.",
@@ -204,10 +255,10 @@ Scoring guidelines:
 - 50-69: Needs work. Several violations.
 - 0-49: Poor. Many violations.
 
-Score < 70 = fail. Be FAIR, not pedantic.
+Score < {CAVEMAN_THRESHOLD} = fail. Be FAIR, not pedantic.
 Small imperfections are OK if the overall style is clear and concise.
 Do NOT nitpick single words or split obvious pairs.
-Do NOT include text outside JSON."""
+Do NOT include text outside JSON.{CAVEMAN_PROMPT_ADDENDUM}"""
 
     user = f"=== AGENTS.md ===\n{agents_md}"
 
@@ -439,7 +490,8 @@ def main() -> int:
     # Exit code: 0 if both pass, 1 if either fails
     # Use score threshold, not LLM's "passed" field (which can be inconsistent)
     std_passed = std_result.get("score", 0) >= 70
-    cave_passed = cave_result.get("score", 0) >= 70
+    cave_passed = cave_result.get("score", 0) >= CAVEMAN_THRESHOLD
+    print(f"[INFO] Caveman threshold: {CAVEMAN_THRESHOLD} (intensity={CAVEMAN_INTENSITY})")
 
     if std_passed and cave_passed:
         print("[INFO] All checks passed.")
