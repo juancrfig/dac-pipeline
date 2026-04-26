@@ -107,9 +107,9 @@ dac init
 ```bash
 git clone https://github.com/juancrfig/dac-pipeline
 cd dac-pipeline
-python -m venv .venv
+uv venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+uv pip install -e ".[dev]"
 pytest
 ```
 
