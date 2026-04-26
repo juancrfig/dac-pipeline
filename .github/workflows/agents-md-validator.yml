@@ -29,6 +29,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install uv
+          uv venv
           uv pip install openai
 
       - name: Check for AAIF standard updates

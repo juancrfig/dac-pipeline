@@ -30,6 +30,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install uv
+          uv venv
           uv pip install openai
 
       - name: Run sync script
