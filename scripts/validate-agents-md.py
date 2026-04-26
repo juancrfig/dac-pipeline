@@ -33,7 +33,7 @@ from urllib.request import urlopen, Request
 # Config
 # ---------------------------------------------------------------------------
 
-DEFAULT_MODEL = "openai/gpt-4o-mini-2024-07-18"
+DEFAULT_MODEL = "openai/gpt-5-nano"
 CACHE_DIR = Path(__file__).resolve().parent.parent / ".agents-validation-cache"
 
 # Caveman rules from ADR-002
