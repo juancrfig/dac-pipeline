@@ -23,8 +23,8 @@ import os
 import re
 import sys
 from pathlib import Path
-from urllib.request import urlopen, Request
 from urllib.error import HTTPError
+from urllib.request import Request, urlopen
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -101,26 +101,24 @@ def extract_with_llm(readme: str, agents_md: str, extra_files: dict[str, str]) -
     if len(context) > max_chars:
         context = context[:max_chars] + "\n...[truncated]"
 
-    prompt = f"""You are a specification parser. Extract the current AGENTS.md standard from the upstream content below.
-
-Return ONLY a JSON object with this exact schema:
-{{
-  "recommended_sections": ["list of section names the standard recommends"],
-  "guidance_rules": ["action-oriented rules / do's and don'ts"],
-  "minimal_example": "a generic, tool-agnostic markdown example of a good AGENTS.md",
-  "validation_criteria": ["criteria for checking if an AGENTS.md follows the standard"],
-  "notes": "any other important patterns or conventions from the standard"
-}}
-
-Rules:
-- Sections should be generic (not tool-specific: no pnpm, turbo, vite, npm, next.js)
-- Rules must be imperative and action-oriented
-- Example must use placeholder commands like `<your-install-command>`
-- Do NOT include any text outside the JSON
-
-Upstream content:
-{context}
-"""
+    prompt = (
+        "You are a specification parser. Extract the current AGENTS.md "
+        "standard from the upstream content below.\n\n"
+        "Return ONLY a JSON object with this exact schema:\n"
+        "{{\n"
+        '  "recommended_sections": ["list of section names the standard recommends"],\n'
+        '  "guidance_rules": ["action-oriented rules / do\'s and don\'ts"],\n'
+        '  "minimal_example": "a generic, tool-agnostic markdown example of a good AGENTS.md",\n'
+        '  "validation_criteria": ["criteria for checking if an AGENTS.md follows the standard"],\n'
+        '  "notes": "any other important patterns or conventions from the standard"\n'
+        "}}\n\n"
+        "Rules:\n"
+        "- Sections should be generic (not tool-specific: no pnpm, turbo, vite, npm, next.js)\n"
+        "- Rules must be imperative and action-oriented\n"
+        "- Example must use placeholder commands like `<your-install-command>`\n"
+        "- Do NOT include any text outside the JSON\n\n"
+        f"Upstream content:\n{context}\n"
+    )
 
     print("[INFO] Calling LLM for semantic extraction ...")
     resp = client.chat.completions.create(
@@ -181,7 +179,11 @@ def extract_recommended_sections(readme: str, agents_md: str) -> list[str]:
             )
             if any(k in h.lower() for k in noise_keywords):
                 continue
-            if re.match(r"^\d+\s*\.\s*(Use|Keep|Do|Don't|Always|Never|Prefer|Run|Install)", h, re.I):
+            if re.match(
+                r"^\d+\s*\.\s*(Use|Keep|Do|Don't|Always|Never|Prefer|Run|Install)",
+                h,
+                re.I,
+            ):
                 continue
             if h not in sections:
                 sections.append(h)
@@ -207,7 +209,10 @@ def extract_guidance_rules(readme: str, agents_md: str) -> list[str]:
     )
     for match in imperative_pattern.finditer(combined):
         rule = match.group(0).strip()
-        if any(tool in rule.lower() for tool in ("pnpm", "npm run", "turbo", "vite", "eslint", "next.js", "hmr")):
+        if any(
+            tool in rule.lower()
+            for tool in ("pnpm", "npm run", "turbo", "vite", "eslint", "next.js", "hmr")
+        ):
             continue
         if rule not in rules:
             rules.append(rule)
@@ -273,7 +278,10 @@ def generate_template(
     for section in sections:
         lines.append(f"- **{section}**")
     if not sections:
-        lines.append("- *(No sections could be inferred from upstream — standard may still be evolving)*")
+        lines.append(
+            "- *(No sections could be inferred from upstream — "
+            "standard may still be evolving)*"
+        )
 
     lines.extend([
         "",
@@ -302,7 +310,10 @@ def generate_template(
 
     if examples:
         first_ex = examples[0]
-        if any(tool in first_ex.lower() for tool in ("pnpm", "turbo", "vite", "npm run", "next.js", "hmr")):
+        if any(
+            tool in first_ex.lower()
+            for tool in ("pnpm", "turbo", "vite", "npm run", "next.js", "hmr")
+        ):
             lines.extend(_generic_example_lines())
         else:
             lines.extend(first_ex.splitlines())
@@ -402,9 +413,15 @@ def save_state(state: dict) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Sync AGENTS.md standard from upstream")
-    parser.add_argument("--dry-run", action="store_true", help="Print what would change without writing")
-    parser.add_argument("--force", action="store_true", help="Regenerate even if upstream unchanged")
-    parser.add_argument("--llm", action="store_true", help="Use LLM for semantic extraction (robust)")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Print what would change without writing"
+    )
+    parser.add_argument(
+        "--force", action="store_true", help="Regenerate even if upstream unchanged"
+    )
+    parser.add_argument(
+        "--llm", action="store_true", help="Use LLM for semantic extraction (robust)"
+    )
     parser.add_argument("--regex", action="store_true", help="Use regex heuristics (fast, fragile)")
     args = parser.parse_args()
 

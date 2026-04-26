@@ -7,7 +7,9 @@ If so, uses an LLM to regenerate docs/AAIF-STANDARD-REFERENCE.md
 in caveman style.
 
 Usage:
-  python scripts/update-standard-reference.py --reference docs/AAIF-STANDARD-REFERENCE.md --template AGENTS-TEMPLATE.md
+  python scripts/update-standard-reference.py \\
+      --reference docs/AAIF-STANDARD-REFERENCE.md \\
+      --template AGENTS-TEMPLATE.md
 """
 
 import argparse
@@ -17,7 +19,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from urllib.request import urlopen, Request
+from urllib.request import Request, urlopen
 
 # ---------------------------------------------------------------------------
 # Config
@@ -59,7 +61,14 @@ def _call_llm(prompt: str, model: str) -> str:
     payload = {
         "model": model,
         "messages": [
-            {"role": "system", "content": "You are a technical writer. Write in caveman style: short sentences, imperative, no filler words, no passive voice, bullets only, max 15 words per sentence."},
+            {
+                "role": "system",
+                "content": (
+                    "You are a technical writer. Write in caveman style: "
+                    "short sentences, imperative, no filler words, no passive voice, "
+                    "bullets only, max 15 words per sentence."
+                ),
+            },
             {"role": "user", "content": prompt},
         ],
         "temperature": 0.2,
@@ -142,7 +151,8 @@ Write a complete, updated AAIF-STANDARD-REFERENCE.md file. Rules:
 - Add validation checklist
 - Keep it under 150 lines
 - Include links to AAIF project
-- Use `uv` for all Python tooling examples. Never use `pip`. Use `uv sync`, `uv run pytest`, `uv run python`, etc.
+- Use `uv` for all Python tooling examples. Never use `pip`.
+  Use `uv sync`, `uv run pytest`, `uv run python`, etc.
 - Remove any lines that contain the word " pip "
 
 Return ONLY the raw markdown content. No code blocks, no explanations."""
@@ -164,7 +174,10 @@ Return ONLY the raw markdown content. No code blocks, no explanations."""
     print(f"[INFO] Wrote updated reference to {reference_path}")
 
     # Update state
-    state = {"reference_hash": upstream_hash, "last_update": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()}
+    now = __import__("datetime").datetime.now(
+        __import__("datetime").timezone.utc
+    ).isoformat()
+    state = {"reference_hash": upstream_hash, "last_update": now}
     state_path.write_text(json.dumps(state, indent=2) + "\n")
     print(f"[INFO] Updated state file {state_path}")
 

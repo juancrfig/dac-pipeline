@@ -1,0 +1,27 @@
+{
+  "score": 60,
+  "passed": false,
+  "violations": [
+    {
+      "rule": "No filler words: 'basically', 'essentially', 'in order to', 'it is important to note'.",
+      "location": "- Basically, you should essentially make sure that your development environment is properly configured in order to run the pipeline successfully, which is important to note.",
+      "fix": "Set up dev env. Run pipeline."
+    },
+    {
+      "rule": "Prose paragraphs present. Use bullet lists.",
+      "location": "It is recommended that you run the tests before committing any changes, and you should preferably use pytest with coverage so that you can see how much of your code is actually being tested, which is basically essential for maintaining high quality standards in the project.",
+      "fix": "Run tests before commit. Use pytest with coverage. Keep code quality high."
+    },
+    {
+      "rule": "Passive voice detected. Avoid 'should be' constructions that hide actor.",
+      "location": "- The code should be formatted using black and it should be linted with ruff and type checked with mypy because these tools are very important for ensuring consistency and catching errors early in the development process.",
+      "fix": "Format code with black. Lint code with ruff. Type check with mypy. Tools keep code clean."
+    },
+    {
+      "rule": "No nested clauses / one idea per sentence.",
+      "location": "- The code should be formatted using black and it should be linted with ruff and type checked with mypy because these tools are very important for ensuring consistency and catching errors early in the development process.",
+      "fix": "Format code with black. Lint code with ruff. Type check with mypy. Tools keep code clean."
+    }
+  ],
+  "summary": "AGENTS.md needs caveman style edits. Four issues found."
+}
