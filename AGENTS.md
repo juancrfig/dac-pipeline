@@ -26,7 +26,7 @@
 
 - Title format: `[<scope>] <description>`
 - Run lint and tests before commit.
-- Update AGENTS.md if build or test steps change.
+- Update AGENTS.md when build or test steps change.
 - Add `#agents-md-override` in PR description to skip validation.
 
 ## Architecture overview
@@ -36,7 +36,7 @@
 - `tests/` — Test suite.
 - `docs/` — ADRs, architecture docs, experiments.
 - `docs/ADRs/` — Decision records: 000, 002, 003.
-- CLI entry point: `dac` command maps to `dac.cli:main`.
+- CLI entry point: `dac`. Maps to `dac.cli:main`.
 - Uses tree-sitter for AST parsing across Python, JS, TS, Go.
 
 ## Common tasks
@@ -44,6 +44,7 @@
 - Sync standard from upstream: `python scripts/sync-agents-standard.py`
 - Sync with LLM extraction: `python scripts/sync-agents-standard.py --llm`
 - Validate AGENTS.md: `python scripts/validate-agents-md.py --agents-md AGENTS.md`
-- Run CI workflows locally with `act` or push to test branch.
+- Run CI workflows locally with `act`.
+- Push to test branch for CI validation.
 - Update AAIF reference: `python scripts/update-standard-reference.py`
 
