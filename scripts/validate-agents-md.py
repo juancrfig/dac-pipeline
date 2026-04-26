@@ -239,7 +239,7 @@ def generate_report(
         "# AGENTS.md Validation Report",
         "",
         f"**File:** `{agents_md_path}`",
-        f"**Date:** {__import__('datetime').datetime.utcnow().isoformat()}Z",
+        f"**Date:** {__import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat()}",
         "",
         "---",
         "",
