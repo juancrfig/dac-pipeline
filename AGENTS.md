@@ -45,3 +45,4 @@
 - Sync with LLM extraction: `python scripts/sync-agents-standard.py --llm`
 - Validate AGENTS.md: `python scripts/validate-agents-md.py --agents-md AGENTS.md`
 - Run CI workflows locally with `act` or push to test branch.
+- Update AAIF reference: `python scripts/update-standard-reference.py`
