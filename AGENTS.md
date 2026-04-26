@@ -2,15 +2,15 @@
 
 ## Dev environment tips
 - Run tests.
-- Install deps: `uv pip install -e ".[dev]"`.
-- Install with LLM support: `uv pip install -e ".[dev,llm]"`.
+- Install deps: `pip install -e '.[dev]'`.
+- Install with LLM support: `pip install -e '.[dev,llm]'`.
 - Use Python 3.10 or newer.
 - Build backend: hatchling.
 
 ## Testing instructions
 - Run tests: `pytest`.
 - Run with coverage: `pytest --cov=dac`.
-- Run single test: `pytest tests/test_file.py::TestClass::test_method -xvs`.
+- Run a single test: `pytest tests/test_file.py::TestClass::test_method -xvs`.
 - CI runs tests before merge.
 
 ## Code style
@@ -23,7 +23,7 @@
 ## PR instructions
 - Title format: `[<scope>] <description>`.
 - Run lint and tests before commit.
-- Update AGENTS.md when build or test steps change.
+- Update AGENTS.md if build or test steps change.
 - Add `#agents-md-override` in PR description to skip validation.
 
 ## Architecture overview
@@ -37,14 +37,13 @@
 - `tests/` is test suite.
 - `docs/` has ADRs, architecture docs, experiments.
 - `docs/ADRs/` has decision records: 000, 002, 003.
+
+## Architecture overview (continued)
 - CLI entry point is `dac`.
 - Maps to `dac.cli:main`.
 - Uses tree-sitter for AST parsing across Python, JS, TS, Go.
 
-## Common tasks
-- Sync standard from upstream: `python scripts/sync-agents-standard.py`.
-- Sync with LLM extraction: `python scripts/sync-agents-standard.py --llm`.
-- Validate AGENTS.md: `python scripts/validate-agents-md.py --agents-md AGENTS.md`.
-- Run CI workflows locally with `act`.
-- Push to test branch for CI validation.
-- Update AAIF reference: `python scripts/update-standard-reference.py`.
+## Changelog
+
+- `251d980b` — Auto-synced from upstream `agentsmd/agents.md`
+- Fix install commands; replace `uv` with `pip` in AGENTS.md.
