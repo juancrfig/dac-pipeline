@@ -409,7 +409,11 @@ def main() -> int:
         post_pr_comment(report, args.pr_number)
 
     # Exit code: 0 if both pass, 1 if either fails
-    if std_result.get("passed") and cave_result.get("passed"):
+    # Use score threshold, not LLM's "passed" field (which can be inconsistent)
+    std_passed = std_result.get("score", 0) >= 70
+    cave_passed = cave_result.get("score", 0) >= 70
+    
+    if std_passed and cave_passed:
         print("[INFO] All checks passed.")
         return 0
     else:
