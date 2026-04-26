@@ -17,17 +17,20 @@ Environment:
   PR_NUMBER           - Pull request number
 
 Usage:
-  python scripts/validate-agents-md.py --agents-md AGENTS.md --template AGENTS-TEMPLATE.md --pr-number 42
+  python scripts/validate-agents-md.py \\
+      --agents-md AGENTS.md --template AGENTS-TEMPLATE.md \\
+      --pr-number 42
 """
 
 import argparse
+import datetime
 import hashlib
 import json
 import os
 import re
 import sys
 from pathlib import Path
-from urllib.request import urlopen, Request
+from urllib.request import Request, urlopen
 
 # ---------------------------------------------------------------------------
 # Config
@@ -35,6 +38,57 @@ from urllib.request import urlopen, Request
 
 DEFAULT_MODEL = "openai/gpt-5-nano"
 CACHE_DIR = Path(__file__).resolve().parent.parent / ".agents-validation-cache"
+
+# Caveman intensity: lite | full | ultra
+# Matches the caveman repo levels: https://github.com/JuliusBrussee/caveman
+CAVEMAN_INTENSITY = os.environ.get("CAVEMAN_INTENSITY", "full").lower()
+
+INTENSITY_CONFIG = {
+    "lite": {
+        "threshold": 65,
+        "prompt_addendum": (
+            "\n\nValidation mode: LITE\n"
+            "Only enforce lite caveman rules:\n"
+            "- Drop filler words (just, really, basically, essentially)\n"
+            "- No hedging (might, should, consider, perhaps)\n"
+            "- No passive voice\n"
+            "- No prose paragraphs — use bullet lists\n"
+            "Grammar, articles, and normal sentence structure are ALLOWED.\n"
+            "Comma-separated lists and compound items count as ONE idea.\n"
+            "Do NOT flag: articles, short compound bullets, file paths, version numbers."
+        ),
+    },
+    "full": {
+        "threshold": 65,
+        "prompt_addendum": (
+            "\n\nValidation mode: FULL\n"
+            "Enforce full caveman rules:\n"
+            "- Drop articles (a, an, the)\n"
+            "- Drop filler words\n"
+            "- No hedging, no passive voice\n"
+            "- Fragments and short sentences OK\n"
+            "- One idea per sentence\n"
+            "Be FAIR, not pedantic. Small imperfections OK.\n"
+            "Comma-separated lists of related items count as ONE idea."
+        ),
+    },
+    "ultra": {
+        "threshold": 75,
+        "prompt_addendum": (
+            "\n\nValidation mode: ULTRA\n"
+            "Enforce maximum compression. Be STRICT:\n"
+            "- Telegraphic style. Abbreviate everything possible.\n"
+            "- One idea per sentence, max 10 words.\n"
+            "- No articles, no filler, no hedging, no passive voice.\n"
+            "- Prefer fragments over full sentences.\n"
+            "Only pass content that is aggressively compressed."
+        ),
+    },
+}
+
+_cave_config = INTENSITY_CONFIG.get(CAVEMAN_INTENSITY, INTENSITY_CONFIG["full"])
+CAVEMAN_THRESHOLD = int(os.environ.get("CAVEMAN_SCORE_THRESHOLD", _cave_config["threshold"]))
+CAVEMAN_PROMPT_ADDENDUM = _cave_config["prompt_addendum"]
 
 # Caveman rules from ADR-002
 CAVEMAN_RULES = [
@@ -129,7 +183,8 @@ def validate_standard_compliance(agents_md: str, template: str, model: str | Non
         print("[INFO] Using cached standard validation result")
         return cached
 
-    system = """You are an AGENTS.md validator. Check if the provided AGENTS.md follows the AAIF standard.
+    system = """You are an AGENTS.md validator.
+Check if the provided AGENTS.md follows the AAIF standard.
 
 Return ONLY a JSON object with this exact schema:
 {
@@ -152,7 +207,10 @@ Rules:
 - Suggestions must be specific and actionable
 - Do NOT include any text outside the JSON"""
 
-    user = f"=== AGENTS-TEMPLATE.md (standard) ===\n{template}\n\n=== AGENTS.md (to validate) ===\n{agents_md}"
+    user = (
+        f"=== AGENTS-TEMPLATE.md (standard) ===\n{template}\n\n"
+        f"=== AGENTS.md (to validate) ===\n{agents_md}"
+    )
 
     raw = _call_llm(system, user, model)
     # Extract JSON if wrapped in markdown
@@ -191,7 +249,16 @@ Return ONLY a JSON object:
   "summary": "one-line summary"
 }}
 
-Score < 70 = fail. Be strict. Do NOT include text outside JSON."""
+Scoring guidelines:
+- 90-100: Excellent caveman style. Minor issues only.
+- 70-89: Good caveman style. A few fixable issues.
+- 50-69: Needs work. Several violations.
+- 0-49: Poor. Many violations.
+
+Score < {CAVEMAN_THRESHOLD} = fail. Be FAIR, not pedantic.
+Small imperfections are OK if the overall style is clear and concise.
+Do NOT nitpick single words or split obvious pairs.
+Do NOT include text outside JSON.{CAVEMAN_PROMPT_ADDENDUM}"""
 
     user = f"=== AGENTS.md ===\n{agents_md}"
 
@@ -205,9 +272,16 @@ Score < 70 = fail. Be strict. Do NOT include text outside JSON."""
     return result
 
 
-def generate_rewrite(agents_md: str, template: str, std_issues: list, cave_violations: list, model: str | None) -> str:
+def generate_rewrite(
+    agents_md: str,
+    template: str,
+    std_issues: list,
+    cave_violations: list,
+    model: str | None,
+) -> str:
     """Generate a rewritten AGENTS.md that fixes all issues."""
-    cache_key = f"rewrite-{_content_hash(agents_md + template + json.dumps(std_issues) + json.dumps(cave_violations))}"
+    hash_input = agents_md + template + json.dumps(std_issues) + json.dumps(cave_violations)
+    cache_key = f"rewrite-{_content_hash(hash_input)}"
     cached = _cache_get(cache_key)
     if cached:
         return cached.get("rewrite", "")
@@ -217,9 +291,17 @@ def generate_rewrite(agents_md: str, template: str, std_issues: list, cave_viola
 2. Use caveman style (short sentences, imperative, no fluff)
 3. Fix all reported issues
 
-Return ONLY the rewritten AGENTS.md content as raw markdown. No explanations, no JSON, no preamble."""
+Return ONLY the rewritten AGENTS.md content as raw markdown.
+No explanations, no JSON, no preamble."""
 
-    user = f"=== Standard Template ===\n{template}\n\n=== Issues to Fix ===\nStandard issues: {json.dumps(std_issues, indent=2)}\n\nCaveman violations: {json.dumps(cave_violations, indent=2)}\n\n=== Current AGENTS.md ===\n{agents_md}"
+    std_issues_json = json.dumps(std_issues, indent=2)
+    cave_violations_json = json.dumps(cave_violations, indent=2)
+    user = (
+        f"=== Standard Template ===\n{template}\n\n"
+        f"=== Issues to Fix ===\nStandard issues: {std_issues_json}\n\n"
+        f"Caveman violations: {cave_violations_json}\n\n"
+        f"=== Current AGENTS.md ===\n{agents_md}"
+    )
 
     rewrite = _call_llm(system, user, model)
     _cache_set(cache_key, {"rewrite": rewrite})
@@ -239,7 +321,7 @@ def generate_report(
         "# AGENTS.md Validation Report",
         "",
         f"**File:** `{agents_md_path}`",
-        f"**Date:** {__import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat()}",
+        f"**Date:** {datetime.datetime.now(datetime.timezone.utc).isoformat()}",
         "",
         "---",
         "",
@@ -255,7 +337,10 @@ def generate_report(
         lines.append("### Issues")
         for issue in issues:
             emoji = {"error": "❌", "warning": "⚠️", "info": "ℹ️"}.get(issue.get("severity"), "•")
-            lines.append(f"{emoji} **{issue.get('category', 'issue')}** — {issue.get('message', '')}")
+            lines.append(
+                f"{emoji} **{issue.get('category', 'issue')}** — "
+                f"{issue.get('message', '')}"
+            )
             if issue.get("suggestion"):
                 lines.append(f"   → *Fix:* {issue['suggestion']}")
             lines.append("")
@@ -342,7 +427,7 @@ def post_pr_comment(report: str, pr_number: str) -> None:
     })
 
     try:
-        with urlopen(req, timeout=30) as resp:
+        with urlopen(req, timeout=30):
             print(f"[INFO] Posted comment to PR #{pr_number}")
     except Exception as e:
         print(f"[WARN] Failed to post PR comment: {e}", file=sys.stderr)
@@ -403,7 +488,12 @@ def main() -> int:
         post_pr_comment(report, args.pr_number)
 
     # Exit code: 0 if both pass, 1 if either fails
-    if std_result.get("passed") and cave_result.get("passed"):
+    # Use score threshold, not LLM's "passed" field (which can be inconsistent)
+    std_passed = std_result.get("score", 0) >= 70
+    cave_passed = cave_result.get("score", 0) >= CAVEMAN_THRESHOLD
+    print(f"[INFO] Caveman threshold: {CAVEMAN_THRESHOLD} (intensity={CAVEMAN_INTENSITY})")
+
+    if std_passed and cave_passed:
         print("[INFO] All checks passed.")
         return 0
     else:

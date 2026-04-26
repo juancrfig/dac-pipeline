@@ -1,0 +1,19 @@
+{
+  "score": 60,
+  "passed": false,
+  "issues": [
+    {
+      "severity": "warning",
+      "category": "wrong_format",
+      "message": "In Dev environment tips, the line 'Basically, you should essentially make sure that your development environment is properly configured in order to run the pipeline successfully, which is important to note.' is non-actionable guidance.",
+      "suggestion": "Rewrite to imperative, actionable steps like 'Configure the development environment to run the pipeline: ...' and remove the vague sentence."
+    },
+    {
+      "severity": "warning",
+      "category": "wrong_format",
+      "message": "In Testing instructions, the sentence 'It is recommended that you run the tests before committing any changes, and you should preferably use pytest with coverage so that you can see how much of your code is actually being tested, which is basically essential for maintaining high quality standards in the project.' is descriptive rather than imperative.",
+      "suggestion": "Convert to actionable commands or bullets, e.g., 'Run the full test suite: pytest --maxfail=1 -q'; 'Run a single test: pytest path/to/test.py::TestClass::test_method'."
+    }
+  ],
+  "summary": "Two sections in AGENTS.md contain non-actionable guidance and should be rewritten to imperative, copy-pasteable commands to align with AAIF standards."
+}
