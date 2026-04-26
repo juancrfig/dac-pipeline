@@ -2,8 +2,8 @@
 
 ## Dev environment tips
 - Run tests.
-- Install deps: `pip install -e '.[dev]'`.
-- Install with LLM support: `pip install -e '.[dev,llm]'`.
+- Install deps: `uv sync --extra dev`.
+- Install with LLM support: `uv sync --extra dev --extra llm'`.
 - Use Python 3.10 or newer.
 - Build backend: hatchling.
 
@@ -46,4 +46,3 @@
 ## Changelog
 
 - `251d980b` — Auto-synced from upstream `agentsmd/agents.md`
-- Fix install commands; replace `uv` with `pip` in AGENTS.md.
