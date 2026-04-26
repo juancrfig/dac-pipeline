@@ -1,0 +1,13 @@
+{
+  "last_sha": "251d980b72108ca6",
+  "last_sync": "2026-04-26T16:20:59.019254Z",
+  "upstream_repo": "agentsmd/agents.md",
+  "sections_found": [
+    "Dev environment tips",
+    "Testing instructions",
+    "PR instructions"
+  ],
+  "rules_found": 2,
+  "extra_files": [],
+  "extraction_mode": "regex"
+}

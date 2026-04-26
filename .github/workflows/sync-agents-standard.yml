@@ -1,0 +1,72 @@
+name: Sync AGENTS.md Standard
+
+on:
+  schedule:
+    # Run daily at 06:00 UTC — checks if upstream changed, opens PR if so
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force regeneration even if upstream unchanged'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install openai
+
+      - name: Run sync script
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          FORCE_FLAG=""
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then
+            FORCE_FLAG="--force"
+          fi
+          python scripts/sync-agents-standard.py --llm ${FORCE_FLAG}
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet HEAD -- AGENTS-TEMPLATE.md; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: sync AGENTS.md standard from upstream'
+          title: 'chore: sync AGENTS.md standard from upstream'
+          body: |
+            Auto-generated PR. The upstream `agentsmd/agents.md` standard has changed.
+
+            - `AGENTS-TEMPLATE.md` regenerated via LLM extraction
+            - `.agents-standard-state.json` updated with new sync SHA
+
+            Please review the extracted patterns before merging.
+          branch: chore/sync-agents-standard
+          delete-branch: true
+          add-paths: |
+            AGENTS-TEMPLATE.md
+            .agents-standard-state.json
