@@ -2,6 +2,14 @@
 
 > AI-native documentation that stays true to your codebase.
 
+## Origin Story
+
+This project started with a real problem: we were trying to contribute to [Hermes Agent](https://github.com/NousResearch/hermes-agent), an AI-powered coding assistant framework. The project has a massive developer guide (`AGENTS.md`, ~35k characters) that AI assistants use to understand the codebase. We discovered it was drifting — file references pointed to renamed files, function signatures were stale, and new patterns were undocumented. AI assistants were burning context tokens on wrong assumptions.
+
+We ran experiments on the Hermes codebase to measure the drift. The results were stark: **41% of file references were stale**. We built a prototype drift checker, validated it worked, and realized this problem isn't unique to Hermes — every project using AI assistants faces it.
+
+So we extracted the solution into a standalone tool: **DAC** (Docs-as-Code). A CI pipeline that treats your AI-facing documentation as code — automatically scanned, validated, and kept in sync with your actual codebase.
+
 ## The Problem
 
 AI coding assistants (Cursor, Copilot, Claude Code, Hermes) rely on project docs to understand your codebase. But docs drift:
@@ -87,83 +95,17 @@ dac fix AGENTS.md
 dac init
 ```
 
-## Configuration
+## Background & Research
 
-```yaml
-# dac.config.yaml
-docs:
-  main: AGENTS.md
-  invariants: HERMES_INVARIANTS.md
-  paths:
-    - "docs/**/*.md"
-    - "README.md"
-
-checks:
-  file_refs: true
-  function_signatures: true
-  imports: true
-  token_count:
-    warn: 8000
-    fail: 15000
-
-llm:
-  enabled: true
-  provider: anthropic
-  model: claude-sonnet-4
-  on_drift: suggest_fixes  # or "auto_pr"
-
-ignore:
-  - "*.template.md"
-  - "docs/examples/"
-```
-
-## Language Support
-
-| Language | File refs | Function sigs | Imports | AST parser |
-|----------|-----------|---------------|---------|------------|
-| Python | ✅ | ✅ | ✅ | Built-in |
-| TypeScript | ✅ | ✅ | ✅ | Tree-sitter |
-| JavaScript | ✅ | ✅ | ✅ | Tree-sitter |
-| Go | ✅ | ✅ | ✅ | Tree-sitter |
-| Rust | ✅ | 🚧 | 🚧 | Tree-sitter |
-| Ruby | ✅ | 🚧 | 🚧 | Tree-sitter |
-
-## The Creative Angle (Hackathon)
-
-DAC enables creative coding with AI by removing the friction:
-
-- **Game dev**: AI agents understand your engine architecture without reading 10k lines
-- **Generative art**: Docs stay synced with your p5.js/Three.js pipeline
-- **Audio tools**: Function references in docs always match your DSP code
-- **Interactive media**: Architecture diagrams auto-update when you refactor
-
-Less time fixing AI mistakes → more time creating.
-
-## Architecture
-
-```
-dac-pipeline/
-├── cli/                    # `dac check`, `dac fix`, `dac init`
-├── core/
-│   ├── extractors/        # Parse docs for code references
-│   ├── validators/        # Verify against codebase
-│   ├── reporters/         # Markdown, JSON, GitHub comments
-│   └── ast_parsers/       # Language-specific parsers
-├── llm_bridge/            # Optional LLM integration
-│   ├── prompts/           # Drift analysis prompts
-│   └── providers/         # OpenAI, Anthropic, local
-├── github-action/         # action.yml + Dockerfile
-└── presets/               # Templates for different project types
-    ├── python-lib.md.hbs
-    ├── react-app.md.hbs
-    ├── rust-cli.md.hbs
-    └── hermes-agent.md.hbs
-```
+- [Experiments](docs/EXPERIMENTS.md) — Full methodology and raw results from the Hermes audit
+- [Architecture](docs/ARCHITECTURE.md) — System design, language support, extension points
+- [Configuration](docs/CONFIGURATION.md) — `dac.config.yaml` reference
+- [Hackathon Submission](docs/HACKATHON.md) — Why this fits the Hermes Creative Hackathon
 
 ## Development
 
 ```bash
-git clone https://github.com/nousresearch/dac-pipeline
+git clone https://github.com/juancrfig/dac-pipeline
 cd dac-pipeline
 python -m venv .venv
 source .venv/bin/activate
@@ -173,7 +115,7 @@ pytest
 
 ## License
 
-MIT — use it, fork it, build on it.
+MIT — see [LICENSE](LICENSE).
 
 ---
 
