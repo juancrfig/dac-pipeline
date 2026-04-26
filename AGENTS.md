@@ -9,7 +9,7 @@
 
 ## Testing instructions
 
-- Run all tests: `pytest`
+- Run tests: `pytest`
 - Run with coverage: `pytest --cov=dac`
 - Run single test: `pytest tests/test_file.py::TestClass::test_method -xvs`
 - All commits must pass CI before merge.
@@ -47,4 +47,3 @@
 - Run CI workflows locally with `act`.
 - Push to test branch for CI validation.
 - Update AAIF reference: `python scripts/update-standard-reference.py`
-
