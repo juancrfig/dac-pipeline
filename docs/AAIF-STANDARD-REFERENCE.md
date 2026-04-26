@@ -49,12 +49,12 @@ Optional but recommended:
 # AGENTS.md
 
 ## Setup commands
-- Install deps: `pip install -r requirements.txt`
-- Start server: `python manage.py runserver`
+- Install deps: `uv sync`
+- Start server: `uv run python manage.py runserver`
 
 ## Testing instructions
-- Run all tests: `pytest`
-- Run single test: `pytest tests/test_example.py::TestClass::test_method`
+- Run all tests: `uv run pytest`
+- Run single test: `uv run pytest tests/test_example.py::TestClass::test_method`
 - All commits must pass CI before merge.
 
 ## Code style

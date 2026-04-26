@@ -142,6 +142,8 @@ Write a complete, updated AAIF-STANDARD-REFERENCE.md file. Rules:
 - Add validation checklist
 - Keep it under 150 lines
 - Include links to AAIF project
+- Use `uv` for all Python tooling examples. Never use `pip`. Use `uv sync`, `uv run pytest`, `uv run python`, etc.
+- Remove any lines that contain the word " pip "
 
 Return ONLY the raw markdown content. No code blocks, no explanations."""
 
@@ -152,6 +154,11 @@ Return ONLY the raw markdown content. No code blocks, no explanations."""
     new_reference = re.sub(r"^```markdown\n", "", new_reference)
     new_reference = re.sub(r"\n```$", "", new_reference)
     new_reference = new_reference.strip() + "\n"
+
+    # Post-process: remove any lines containing " pip "
+    lines = new_reference.splitlines()
+    filtered = [line for line in lines if " pip " not in line]
+    new_reference = "\n".join(filtered) + "\n"
 
     reference_path.write_text(new_reference)
     print(f"[INFO] Wrote updated reference to {reference_path}")
